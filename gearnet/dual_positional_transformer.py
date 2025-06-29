@@ -1,14 +1,16 @@
 import os
 import torch
 from torch import nn
-from transformers import BertModel, BertTokenizer, BertForMaskedLM
+from transformers import BertTokenizer, BertForMaskedLM
 from torchdrug import core, data
 from torchdrug.core import Registry as R
+
 
 class DualPositionalBertEmbeddings(nn.Module):
     """
     Bert Embeddings with optional structure-based (3D) positional embedding.
     """
+
     def __init__(self, orig_embeddings, emb_dim):
         super().__init__()
         # Copy all original embedding layers
@@ -24,14 +26,14 @@ class DualPositionalBertEmbeddings(nn.Module):
         self.struct_pos_proj = nn.Linear(3, emb_dim)
 
     def forward(
-        self,
-        input_ids=None,
-        token_type_ids=None,
-        position_ids=None,
-        inputs_embeds=None,
-        past_key_values_length=0,
-        struct_positions=None,  # [batch, seq_len, 3]
-        mode=0,  # 0: seq only, 1: struct only, 2: sum
+            self,
+            input_ids=None,
+            token_type_ids=None,
+            position_ids=None,
+            inputs_embeds=None,
+            past_key_values_length=0,
+            struct_positions=None,  # [batch, seq_len, 3]
+            mode=0,  # 0: seq only, 1: struct only, 2: sum
     ):
         if input_ids is not None:
             input_shape = input_ids.size()
@@ -39,7 +41,7 @@ class DualPositionalBertEmbeddings(nn.Module):
             input_shape = inputs_embeds.size()[:-1]
         seq_length = input_shape[1]
         if position_ids is None:
-            position_ids = self.position_ids[:, past_key_values_length : seq_length + past_key_values_length]
+            position_ids = self.position_ids[:, past_key_values_length: seq_length + past_key_values_length]
         if token_type_ids is None:
             if hasattr(self, "token_type_ids"):
                 buffered_token_type_ids = self.token_type_ids[:, :seq_length]
@@ -62,12 +64,13 @@ class DualPositionalBertEmbeddings(nn.Module):
             elif mode == 1:
                 embeddings = struct_pos_emb
             elif mode == 2:
-                embeddings = embeddings + struct_pos_emb
+                embeddings[:, 1:-1, :] += struct_pos_emb  # [1:-1] to avoid adding to special tokens
             else:
                 raise ValueError("Invalid mode for dual positional embedding")
         embeddings = self.LayerNorm(embeddings)
         embeddings = self.dropout(embeddings)
         return embeddings
+
 
 @R.register("models.DualPositionalTransformer")
 class DualPositionalTransformer(nn.Module, core.Configurable):
@@ -92,14 +95,11 @@ class DualPositionalTransformer(nn.Module, core.Configurable):
         self.mode = mode
 
         # Replace Bert embeddings with dual positional embedding
-        orig_embeddings = self.model.bert.embeddings
-        self.model.bert.embeddings = DualPositionalBertEmbeddings(orig_embeddings, emb_dim)
+        self.model.bert.embeddings = DualPositionalBertEmbeddings(self.model.bert.embeddings, emb_dim)
 
     def load_weight(self, path):
-        tokenizer = BertTokenizer.from_pretrained("Rostlab/prot_bert",
-                                                  cache_dir="/Users/amitay.s/PycharmProjects/scratch/protein-model-weights/prot_bert/")
-        model = BertForMaskedLM.from_pretrained("Rostlab/prot_bert",
-                                                cache_dir="/Users/amitay.s/PycharmProjects/scratch/protein-model-weights/prot_bert/")
+        tokenizer = BertTokenizer.from_pretrained("Rostlab/prot_bert", cache_dir=path)
+        model = BertForMaskedLM.from_pretrained("Rostlab/prot_bert", cache_dir=path)
         return model, tokenizer
 
     def construct_mappings(self, tokenizer):
@@ -119,14 +119,9 @@ class DualPositionalTransformer(nn.Module, core.Configurable):
         input: [batch, seq_len] (token ids)
         positions: [batch, seq_len, 3]
         """
-        device = input.device
-        batch_size, seq_len = input.shape
-
         # Attention mask
         attention_mask = (input != self.tokenizer.pad_token_id).long()
-
-        # Pass struct_positions and mode to embedding layer
-        outputs = self.model(
+        return self.model(
             input_ids=input,
             attention_mask=attention_mask,
             position_ids=None,
@@ -135,13 +130,6 @@ class DualPositionalTransformer(nn.Module, core.Configurable):
             output_attentions=False,
             output_hidden_states=False,
             return_dict=True,
-            # extra args for our embedding
             struct_positions=positions,
             mode=self.mode,
         )
-        sequence_output = outputs.logits  # [batch, seq_len, vocab]
-
-        # Remove BOS/EOS for output
-        return {
-            "residue_feature": sequence_output
-        }
