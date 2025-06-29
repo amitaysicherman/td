@@ -15,7 +15,7 @@ dataset:
         view: residue
       - class: TruncateProtein
         random: True
-        max_length: 50
+        max_length: 512
 
 
 task:
@@ -24,15 +24,16 @@ task:
   num_mlp_layer: 2
   model:
     class: DualPositionalTransformer
-    path: /Users/amitay.s/PycharmProjects/scratch/protein-model-weights/prot_bert_bfd/
+    path: /Users/amitay.s/PycharmProjects/scratch/protein-model-weights/prot_bert/
     emb_dim: 1024
+    mode: 2
 
 optimizer:
   class: Adam
   lr: 2.0e-4
 
 engine:
-  batch_size: 2
+  batch_size: 1
   log_interval: 1
 
 save_interval: 5
