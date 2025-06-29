@@ -98,8 +98,8 @@ class DualPositionalTransformer(nn.Module, core.Configurable):
         self.model.bert.embeddings = DualPositionalBertEmbeddings(self.model.bert.embeddings, emb_dim)
 
     def load_weight(self, path):
-        tokenizer = BertTokenizer.from_pretrained("Rostlab/prot_bert", cache_dir=path)
-        model = BertForMaskedLM.from_pretrained("Rostlab/prot_bert", cache_dir=path)
+        tokenizer = BertTokenizer.from_pretrained("Rostlab/prot_bert")
+        model = BertForMaskedLM.from_pretrained("Rostlab/prot_bert")
         return model, tokenizer
 
     def construct_mappings(self, tokenizer):
