@@ -15,7 +15,6 @@ from torch.optim import lr_scheduler
 from torchdrug import core, utils, datasets, models, tasks
 from torchdrug.utils import comm
 
-
 logger = logging.getLogger(__file__)
 
 
@@ -110,7 +109,7 @@ def build_downstream_solver(cfg, dataset):
         cfg.task.task = dataset.tasks
     task = core.Configurable.load_config_dict(cfg.task)
 
-    cfg.optimizer.params = task.parameters()        
+    cfg.optimizer.params = task.parameters()
     optimizer = core.Configurable.load_config_dict(cfg.optimizer)
 
     if "scheduler" not in cfg:
@@ -135,7 +134,8 @@ def build_downstream_solver(cfg, dataset):
     elif "sequence_model_lr_ratio" in cfg:
         assert cfg.task.model["class"] == "FusionNetwork"
         cfg.optimizer.params = [
-            {'params': solver.model.model.sequence_model.parameters(), 'lr': cfg.optimizer.lr * cfg.sequence_model_lr_ratio},
+            {'params': solver.model.model.sequence_model.parameters(),
+             'lr': cfg.optimizer.lr * cfg.sequence_model_lr_ratio},
             {'params': solver.model.model.structure_model.parameters(), 'lr': cfg.optimizer.lr},
             {'params': solver.model.mlp.parameters(), 'lr': cfg.optimizer.lr}
         ]
@@ -158,7 +158,7 @@ def build_downstream_solver(cfg, dataset):
         cfg.model_checkpoint = os.path.expanduser(cfg.model_checkpoint)
         model_dict = torch.load(cfg.model_checkpoint, map_location=torch.device('cpu'))
         task.model.load_state_dict(model_dict)
-    
+
     return solver, scheduler
 
 
@@ -173,13 +173,14 @@ def build_pretrain_solver(cfg, dataset):
             model_dict = cfg.task.model.model
             model = task.model.model
         else:
-            model_dict = cfg.task.model 
+            model_dict = cfg.task.model
             model = task.model
-        assert model_dict["class"] == "FusionNetwork"
-        for p in model.sequence_model.parameters():
-            p.requires_grad = False
+        # Only try to freeze sequence_model if it exists and is a FusionNetwork
+        if model_dict.get("class", None) == "FusionNetwork" and hasattr(model, "sequence_model"):
+            for p in model.sequence_model.parameters():
+                p.requires_grad = False
     cfg.optimizer.params = [p for p in task.parameters() if p.requires_grad]
     optimizer = core.Configurable.load_config_dict(cfg.optimizer)
     solver = core.Engine(task, dataset, None, None, optimizer, **cfg.engine)
-    
+
     return solver

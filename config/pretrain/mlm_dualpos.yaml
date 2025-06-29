@@ -1,0 +1,42 @@
+output_dir: ~/scratch/dualpos_outputs
+
+dataset:
+  class: AlphaFoldDB
+  path: /Users/amitay.s/PycharmProjects/scratch/protein-datasets/alphafold
+#  species_start: 0
+#  species_end: 21
+  species_id: 8
+  lazy: True
+
+  transform:
+    class: Compose
+    transforms:
+      - class: ProteinView
+        view: residue
+      - class: TruncateProtein
+        random: True
+        max_length: 50
+
+
+task:
+  class: ResidueTypePrediction
+  mask_rate: 0.15
+  num_mlp_layer: 2
+  model:
+    class: DualPositionalTransformer
+    path: /Users/amitay.s/PycharmProjects/scratch/protein-model-weights/prot_bert_bfd/
+    emb_dim: 1024
+
+optimizer:
+  class: Adam
+  lr: 2.0e-4
+
+engine:
+  batch_size: 2
+  log_interval: 1
+
+save_interval: 5
+fix_sequence_model: False
+
+train:
+  num_epoch: 50

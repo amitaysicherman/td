@@ -9,8 +9,14 @@ from torchdrug import core, models, tasks, datasets, utils
 from torchdrug.utils import comm
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+sys.path.append("/Users/amitay.s/PycharmProjects/scratch/protein-datasets/alphafold")
+sys.path.append("/Users/amitay.s/PycharmProjects/scratch/protein-datasets/")
+sys.path.append("/Users/amitay.s/PycharmProjects/scratch/")
+
+
 import util
-from gearnet import model, task, siamdiff
+from gearnet import dual_positional_transformer
+from gearnet.task import ResidueTypePrediction
 
 
 def save(solver, path):
@@ -54,7 +60,7 @@ if __name__ == "__main__":
     for i in range(0, cfg.train.num_epoch, step):
         kwargs = cfg.train.copy()
         kwargs["num_epoch"] = min(step, cfg.train.num_epoch - i)
-        
+
         if species_end == species_start:
             solver.train(**kwargs)
         else:
@@ -64,7 +70,7 @@ if __name__ == "__main__":
                     cfg.dataset.split_id = split_id
                     dataset = core.Configurable.load_config_dict(cfg.dataset)
                     logger.warning('Epoch: {}\tSpecies id: {}\tSplit id: {}\tSplit length: {}'.format(
-                                i, species_id, split_id, len(dataset)))
+                        i, species_id, split_id, len(dataset)))
                     solver.train_set = dataset
                     solver.train(**kwargs)
 

@@ -41,7 +41,7 @@ pip install atom3d
 ### From Pip
 
 ```bash
-pip install torch==1.12.1+cu116 -f https://download.pytorch.org/whl/lts/1.12/torch_lts.html
+pip install torch==1.12.1 -f https://download.pytorch.org/whl/lts/1.12/torch_lts.html
 pip install torchdrug
 pip install easydict pyyaml
 pip install atom3d
@@ -82,7 +82,7 @@ By default, we will use the AlphaFold Datase for pretraining. To pre-train ESM-G
 
 ```bash
 # Run pre-training
-python -m torch.distributed.launch --nproc_per_node=4 script/pretrain.py -c config/pretrain/mc_esm_gearnet.yaml
+python script/pretrain.py -m torch.distributed.launch --nproc_per_node 1 -c config/pretrain/mlm_dualpos.yaml
 ```
 
 After pre-training, you can load the model weight from the saved checkpoint via the `--ckpt` argument and then finetune the model on downstream tasks.
