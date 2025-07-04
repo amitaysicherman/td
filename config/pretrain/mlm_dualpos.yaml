@@ -24,10 +24,9 @@ task:
   num_mlp_layer: 2
   model:
     class: DualPositionalTransformer
-    path: /Users/amitay.s/PycharmProjects/scratch/protein-model-weights/prot_bert/
-    emb_dim: 1024
-    mode: 2
-
+    input_dim: 30
+    use_struct_embedding: True
+    struct_embedding_mode: 2
 optimizer:
   class: Adam
   lr: 2.0e-4

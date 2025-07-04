@@ -9,10 +9,6 @@ from torchdrug import core, models, tasks, datasets, utils
 from torchdrug.utils import comm
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-sys.path.append("/Users/amitay.s/PycharmProjects/scratch/protein-datasets/alphafold")
-sys.path.append("/Users/amitay.s/PycharmProjects/scratch/protein-datasets/")
-sys.path.append("/Users/amitay.s/PycharmProjects/scratch/")
-
 
 import util
 from gearnet import dual_positional_transformer
